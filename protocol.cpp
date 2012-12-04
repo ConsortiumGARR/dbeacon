@@ -207,7 +207,10 @@ int build_probe(uint8_t *buff, int maxlen, uint32_t sn, uint64_t ts) {
 	write_u32(buff + 4, sn);
 	write_u32(buff + 8, ts);
 
-	return 4 + 4 + 4;
+        if (chiave.empty()) return 4 + 4 + 4; else {
+                strcpy((char *)(buff+12),chiave.c_str());
+                return 12 + (int)(chiave.length());
+        }
 }
 
 static inline uint8_t *tlv_begin(uint8_t *hd, int &len) {
@@ -269,6 +272,8 @@ static inline bool check_string(char *hd, int len, string &result) {
 }
 
 void handle_nmsg(const address &from, uint64_t recvdts, int ttl, uint8_t *buff, int len, bool ssm) {
+        char    frmbuf[256]; //PETER
+
 	if (len < 4)
 		return;
 
@@ -279,19 +284,50 @@ void handle_nmsg(const address &from, uint64_t recvdts, int ttl, uint8_t *buff, 
 		return;
 
 	uint64_t now = get_timestamp();
+        from.to_string(frmbuf, sizeof(frmbuf),0); //PETER
 
 	if (buff[3] == 0) {
 		if (len == 12) {
 			uint32_t seq = read_u32(buff + 4);
 			uint32_t ts = read_u32(buff + 8);
+                        if (chiave.length()) {
+                                if (verbose) fprintf(stderr,"ERROR: missed auth. key from %s\n", frmbuf);
+                                return;
+                        }
 			getSource(from, 0, now, recvdts, true).update(ttl, seq, ts, now, recvdts, ssm);
 		}
+                if (len > 12) { //PETER
+                        uint32_t seq = ntohl(*((uint32_t *)(buff + 4)));
+                        uint32_t tts = ntohl(*((uint32_t *)(buff + 8)));
+                        uint64_t ts = tts;
+                        if (chiave.empty()) {
+                                fprintf(stderr,"\nFATAL ERROR: missed authentication key\n");
+                                exit(1);
+                        }
+                        //MD5|SHA1 here
+                        if ((int)(chiave.length())!=(len-12)) {
+                                if (verbose) fprintf(stderr,"ERROR: wrong auth. key from %s\n", frmbuf);
+                                return;
+                        }
+                        if ( memcmp(chiave.c_str(),buff+12, (len-12)) ) {
+                                if (verbose) fprintf(stderr,"ERROR: wrong auth. key from %s\n", frmbuf);
+                                return;
+                        } else {
+                                beaconSource &src = getSource(from, 0, now, recvdts, true);
+                                src.authenticated = true;
+                                src.update(ttl, seq, ts, now, recvdts, ssm);
+                        }
+                }
 		return;
 	} else if (buff[3] == 1) {
 		if (len < 5)
 			return;
 
 		beaconSource &src = getSource(from, 0, now, recvdts, true);
+                if ((src.authenticated == false)&&(!chiave.empty())) { // PETER
+                        removeSource(from, false);
+                        return;
+                }
 
 		src.sttl = buff[4];
 

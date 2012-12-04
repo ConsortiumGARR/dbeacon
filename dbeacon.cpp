@@ -114,7 +114,7 @@ static const uint32_t KnownFlags = 2;
 
 static uint32_t timeFact(int val, bool random = false);
 
-string beaconName, adminContact, twoLetterCC;
+string beaconName, adminContact, twoLetterCC, chiave;
 Sources sources;
 WebSites webSites;
 address beaconUnicastAddr;
@@ -236,8 +236,8 @@ void usage() {
 	fprintf(stdout, "  -syslog                Outputs using syslog facility.\n");
 	fprintf(stdout, "  -c FILE                Specifies the configuration file\n");
 	fprintf(stdout, "  -V, -version           Outputs version information and leaves\n");
+	fprintf(stdout, "  -K, -key SECRET        Authentication key string\n");
 	fprintf(stdout, "\n");
-
 	exit(1);
 }
 
@@ -426,9 +426,17 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
+        if (dumpBwReport) { //PETER
+                beaconUnicastAddr.to_string(tmp, sizeof(tmp),1);
+                fprintf(stdout, "Local: sock=%d ip=%s\n",mcastSock,tmp);
+        }
 	for (McastListen::const_iterator i = mcastListen.begin();
 			i != mcastListen.end(); ++i) {
 		int sock = SetupSocket(i->first, true, i->second);
+                if (dumpBwReport) { //PETER
+                        i->first.to_string(tmp, sizeof(tmp),1);
+                        fprintf(stdout, "Multicast: sock=%d ip=%s\n",sock,tmp);
+                }
 		if (sock < 0)
 			return -1;
 
@@ -547,6 +555,7 @@ void show_version() {
 	fprintf(stderr, "  o SSM Ping originaly by Stig Venaas\n");
 	fprintf(stderr, "    - first proposed by Pavan Namburi, Kamil Sarac and Kevin C. Almeroth;\n");
 	fprintf(stderr, "  o Bernhard Schmidt provided valuable resources and helped during testing.\n");
+        fprintf(stderr, "  o Pietro Princi was lost in WIN32 translation.\n");
 	fprintf(stderr, "\n");
 
 	exit(1);
@@ -564,6 +573,7 @@ enum {
 	SOURCEADDR,
 	DUMP,
 	DUMPINTERVAL,
+	CHIAVE,
 	DUMPEXEC,
 	SPECWEBSITE,
 	SPECMATRIX,
@@ -604,6 +614,7 @@ static const struct param_tok {
 	{ SOURCEADDR,	"s", "source", REQ_ARG },
 	{ DUMP,		"d", "dump", OPT_ARG },
 	{ DUMPINTERVAL,	"I", "interval", REQ_ARG },
+        { CHIAVE,       "K", "key", REQ_ARG },
 	{ DUMPEXEC,	"L", "exec", REQ_ARG },
 	{ SPECWEBSITE,	"W", "website", REQ_ARG },
 	{ SPECMATRIX,	"Wm", "matrix", REQ_ARG },
@@ -727,6 +738,9 @@ static void process_param(const param_tok *tok, const char *arg) {
 		if (dumpInterval < 5)
 			dumpInterval = 5;
 		break;
+        case CHIAVE:
+                chiave = arg;
+                break;
 	case DUMPEXEC:
 		launchSomething = arg;
 		break;
@@ -932,7 +946,7 @@ static uint64_t lastclk = 0;
 
 static void update_taccum() {
 	uint64_t now = get_timestamp();
-	int32_t diff = now - (int64_t)lastclk;
+	int32_t diff = (int32_t)(now - lastclk);
 
 	assert(now >= lastclk);
 
@@ -1228,6 +1242,7 @@ beaconSource::beaconSource()
 	sttl = 0;
 	lastlocalevent = 0;
 	Flags = 0;
+        authenticated = false; //PETER
 }
 
 void beaconSource::setName(const string &n) {
@@ -1336,6 +1351,10 @@ void beaconMcastState::update(uint8_t ttl, uint32_t seqnum, uint64_t timestamp, 
 	} else {
 		packetcountreal++;
 
+                if (pointer >= PACKETS_PERIOD) { // PETER
+                        fprintf(stderr, "ERROR: cacheseqnum pointer out range!!!\n");
+//                        exit(1);
+                }
 		cacheseqnum[pointer++] = seqnum;
 
 		lastdelay += diff;
@@ -1590,7 +1609,8 @@ void do_dump() {
 
 	fclose(fp);
 
-	rename(tmpf.c_str(), dumpFile.c_str());
+	unlink(dumpFile.c_str()); //PETER
+        rename(tmpf.c_str(), dumpFile.c_str());
 
 	if (!launchSomething.empty())
 		doLaunchSomething();
