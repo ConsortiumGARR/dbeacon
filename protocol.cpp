@@ -18,6 +18,8 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
+#include <cstdlib>
 
 using namespace std;
 
