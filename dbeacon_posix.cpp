@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005  Hugo Santos <hsantos@av.it.pt>
- * $Id$
+ * $Id: dbeacon_posix.cpp 365 2005-09-10 20:34:48Z hugo $
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -35,7 +35,7 @@
 #define CMSG_SPACE(size)	(sizeof(struct cmsghdr) + (size))
 #endif
 
-#if defined(SOLARIS) || defined(__NetBSD__)
+#ifdef SOLARIS
 #define TTLType         uint8_t
 #else
 #define TTLType         int
