@@ -1,0 +1,3 @@
+CC -fast -DSOLARIS -D_XPG4_2 -D__EXTENSIONS__ -c *.cpp
+CC -fast -DSOLARIS -D_XPG4_2 -D__EXTENSIONS__ -o dbeacon *.o  -lnsl -lsocket
+
