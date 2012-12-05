@@ -1,0 +1,2 @@
+#! /bin/sh
+dbeacon -b 233.0.137.2/20002 -s 150.145.64.236/20002 -a pprinci@me.cnr.it -v -v -U -n CNR-ME-IPCF -C IT -d 
