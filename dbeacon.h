@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005  Hugo Santos <hsantos@av.it.pt>
- * $Id$
+ * $Id: dbeacon.h 360 2005-07-26 21:48:18Z hugo $
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -62,9 +62,9 @@ struct beaconMcastState {
 	Stats s;
 
 #define PACKETS_PERIOD		40
-#define PACKETS_VERY_OLD	150
+#define PACKETS_VERY_OLD	1500 //PETER 150
 
-	uint32_t cacheseqnum[PACKETS_PERIOD+1];
+	uint32_t cacheseqnum[PACKETS_PERIOD+40]; //PETER 1
 
 	void refresh(uint32_t, uint64_t);
 	void update(uint8_t, uint32_t, uint64_t, uint64_t, uint64_t);
@@ -105,6 +105,7 @@ struct beaconSource {
 	WebSites webSites;
 
 	bool identified;
+        bool authenticated; // PETER
 };
 
 typedef std::map<address, beaconSource> Sources;
@@ -137,7 +138,7 @@ struct beaconExternalStats;
 
 extern uint32_t flags;
 
-extern std::string beaconName, adminContact, twoLetterCC;
+extern std::string beaconName, adminContact, twoLetterCC, chiave;
 extern Sources sources;
 extern WebSites webSites;
 extern address beaconUnicastAddr;
