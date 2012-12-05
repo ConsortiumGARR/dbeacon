@@ -301,8 +301,7 @@ void handle_nmsg(const address &from, uint64_t recvdts, int ttl, uint8_t *buff, 
                         uint32_t tts = ntohl(*((uint32_t *)(buff + 8)));
                         uint64_t ts = tts;
                         if (chiave.empty()) {
-                                fprintf(stderr,"\nFATAL ERROR: missed authentication key\n");
-                                exit(1);
+                                fprintf(stderr,"\nNot using an authentication key\n");
                         }
                         //MD5|SHA1 here
                         if ((int)(chiave.length())!=(len-12)) {
