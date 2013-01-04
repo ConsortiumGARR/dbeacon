@@ -14,7 +14,7 @@
 ### END INIT INFO
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-DAEMON=/usr/bin/dbeacon
+DAEMON=dbeacon
 NAME=dbeacon
 DESC="Multicast Beacon"
 CONFIG=/etc/dbeacon/dbeacon.conf 
